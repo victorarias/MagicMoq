@@ -32,12 +32,16 @@ namespace MagicMoq
             var type = typeof(T);
             var constructor = type.GetConstructors().OrderBy(a => a.GetParameters().Length).FirstOrDefault();
             ParameterInfo[] parameters = null;
-            
-            if(null != constructor)
+
+            if (null != constructor)
                 parameters = constructor.GetParameters();
 
-            if (parameters == null || parameters.Length == 0)
+            if (type.IsInterface == false && (parameters == null || parameters.Length == 0))
                 return (T)Activator.CreateInstance(type);
+            else if (type.IsInterface)
+            {
+                return (T)ResolveInternal(type);
+            }
             else
             {
                 var resolvedParameters = from p in parameters
@@ -130,5 +134,16 @@ namespace MagicMoq
         }
 
         #endregion
+    }
+
+    public static class ISetupExtensions
+    {
+        public static ISetup<T, TResult> AndMagicallyResolve<T, TResult>(this ISetup<T, TResult> setup, MagicMoq magic)
+            where T : class
+        {
+            setup.Returns(magic.Resolve<TResult>());
+
+            return setup;
+        }
     }
 }

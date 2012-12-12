@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using FluentAssertions;
+using MagicMoq;
 
 namespace MagicMoqTests
 {
@@ -67,6 +68,24 @@ namespace MagicMoqTests
             classWithConcreteDependency.DifferentStuff().Should().Be(11);
         }
 
+        [Test]
+        public void ShouldBeAbleToResolveNestedAndChainedSetups()
+        {
+            var magic = new MagicMoq.MagicMoq();
+
+            magic.Setup<ISessionFactory, ISession>(a => a.OpenSession()).AndMagicallyResolve(magic);
+            magic.Setup<ISession, ITransaction>(a => a.OpenTransaction()).AndMagicallyResolve(magic);
+
+            var someoneThatUseSessionFactory = magic.Resolve<SomeoneThatUseISessionFactory>();
+
+            someoneThatUseSessionFactory.DoSomething();
+
+            magic.Verify<ISessionFactory>(a => a.OpenSession(), Times.Once());
+            magic.Verify<ISession>(a => a.OpenTransaction(), Times.Once());
+            magic.Verify<ISession>(a => a.DoSomething(), Times.Once());
+            magic.Verify<ITransaction>(a => a.Commit(), Times.Once());
+        }
+
         #region Classes and dependencies
 
         public class Foo
@@ -125,6 +144,46 @@ namespace MagicMoqTests
                 return someInt;
             }
         }
+
+        #region SessionFactory + Session "stubs"
+
+        public interface ISessionFactory
+        {
+            ISession OpenSession();
+        }
+
+        public interface ISession
+        {
+            void DoSomething();
+            ITransaction OpenTransaction();
+        }
+
+        public interface ITransaction
+        {
+            void Commit();
+        }
+
+        public class SomeoneThatUseISessionFactory
+        {
+            private ISessionFactory sessionFactory;
+
+            public SomeoneThatUseISessionFactory(ISessionFactory sessionFactory)
+            {
+                this.sessionFactory = sessionFactory;
+            }
+
+            public void DoSomething()
+            {
+                var session = sessionFactory.OpenSession();
+                var transaction = session.OpenTransaction();
+
+                session.DoSomething();
+
+                transaction.Commit();
+            }
+        }
+
+        #endregion
 
         #endregion
     }
