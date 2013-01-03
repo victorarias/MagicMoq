@@ -16,7 +16,7 @@ namespace MagicMoqTests
         [Test]
         public void ShouldCreateClassWithDependenciesAndVerify()
         {
-            var magic = new MagicMoq.MagicMoq();
+            var magic = new MagicMoq.Moqer();
             var foo = magic.Resolve<Foo>();
 
             foo.DoSomething();
@@ -27,7 +27,7 @@ namespace MagicMoqTests
         [Test]
         public void ShouldCreateClassWithDependenciesAndSetup()
         {
-            var magic = new MagicMoq.MagicMoq();
+            var magic = new MagicMoq.Moqer();
             var foo = magic.Resolve<Foo>();
 
             magic.GetMock<IFooDependency>().Setup(a => a.DoSomethingDifferent()).Returns(2);
@@ -38,7 +38,7 @@ namespace MagicMoqTests
         [Test]
         public void ShouldCreateClassWithDependenciesAndVerify_WithMoqAPI()
         {
-            var magic = new MagicMoq.MagicMoq();
+            var magic = new MagicMoq.Moqer();
             var foo = magic.Resolve<Foo>();
 
             foo.DoSomething();
@@ -49,7 +49,7 @@ namespace MagicMoqTests
         [Test]
         public void ShouldCreateClassWithDependenciesAndSetup_WithMoqAPI()
         {
-            var magic = new MagicMoq.MagicMoq();
+            var magic = new MagicMoq.Moqer();
             var foo = magic.Resolve<Foo>();
 
             magic.Setup<IFooDependency, int>(a => a.DoSomethingDifferent()).Returns(2);
@@ -60,7 +60,7 @@ namespace MagicMoqTests
         [Test]
         public void ShouldCreateClassWithConcreteDependency()
         {
-            var magic = new MagicMoq.MagicMoq();
+            var magic = new MagicMoq.Moqer();
             magic.SetInstance(new ConcreteDependency(11));
 
             var classWithConcreteDependency = magic.Resolve<ClassWithConcreteDependency>();
@@ -71,10 +71,10 @@ namespace MagicMoqTests
         [Test]
         public void ShouldBeAbleToResolveNestedAndChainedSetups()
         {
-            var magic = new MagicMoq.MagicMoq();
+            var magic = new MagicMoq.Moqer();
 
-            magic.Setup<ISessionFactory, ISession>(a => a.OpenSession()).AndMagicallyResolve(magic);
-            magic.Setup<ISession, ITransaction>(a => a.OpenTransaction()).AndMagicallyResolve(magic);
+            magic.Setup<ISessionFactory, ISession>(a => a.OpenSession()).AndResolveWith(magic);
+            magic.Setup<ISession, ITransaction>(a => a.OpenTransaction()).AndResolveWith(magic);
 
             var someoneThatUseSessionFactory = magic.Resolve<SomeoneThatUseISessionFactory>();
 
@@ -86,7 +86,34 @@ namespace MagicMoqTests
             magic.Verify<ITransaction>(a => a.Commit(), Times.Once());
         }
 
+        [Test]
+        public void ShouldResolveManyNestedConcreteOrNotDependencies()
+        {
+            var magic = new MagicMoq.Moqer();
+            Action act = () => magic.Resolve<A>();
+
+            act.ShouldNotThrow<ArgumentException>();
+        }
+
         #region Classes and dependencies
+
+        public class A
+        {
+            public A(B b)
+            {
+
+            }
+        }
+
+        public class B
+        {
+            public B(C c)
+            {
+
+            }
+        }
+
+        public interface C { }
 
         public class Foo
         {

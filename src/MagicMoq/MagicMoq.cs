@@ -10,7 +10,7 @@ using System.Reflection;
 
 namespace MagicMoq
 {
-    public class MagicMoq
+    public class Moqer
     {
         private readonly Dictionary<Type, Func<object>> providers = new Dictionary<Type, Func<object>>();
         private readonly Dictionary<Type, Mock> mocks = new Dictionary<Type, Mock>();
@@ -27,28 +27,38 @@ namespace MagicMoq
             return providers.TryGetValue(typeof(T), out provider) ? (T)provider() : ResolveByGreediestConstructor<T>();
         }
 
-        private T ResolveByGreediestConstructor<T>()
+        private object ResolveByGreediestConstructor(Type type)
         {
-            var type = typeof(T);
-            var constructor = type.GetConstructors().OrderBy(a => a.GetParameters().Length).FirstOrDefault();
+            var constructor = GetGreediestConstructor(type);
             ParameterInfo[] parameters = null;
 
             if (null != constructor)
                 parameters = constructor.GetParameters();
 
             if (type.IsInterface == false && (parameters == null || parameters.Length == 0))
-                return (T)Activator.CreateInstance(type);
+                return Activator.CreateInstance(type);
             else if (type.IsInterface)
             {
-                return (T)ResolveInternal(type);
+                return ResolveInternal(type);
             }
             else
             {
                 var resolvedParameters = from p in parameters
                                          select ResolveInternal(p.ParameterType);
 
-                return (T)constructor.Invoke(resolvedParameters.ToArray());
+                return constructor.Invoke(resolvedParameters.ToArray());
             }
+        }
+
+        private T ResolveByGreediestConstructor<T>()
+        {
+            var type = typeof(T);
+            return (T)ResolveByGreediestConstructor(type);
+        }
+
+        private ConstructorInfo GetGreediestConstructor(Type type)
+        {
+            return type.GetConstructors().OrderBy(a => a.GetParameters().Length).FirstOrDefault();
         }
 
         private object ResolveInternal(Type parameterType)
@@ -59,9 +69,18 @@ namespace MagicMoq
                 return provider();
             else
             {
-                var mock = CreateOrResolveAMock(parameterType);
+                var constructor = GetGreediestConstructor(parameterType);
 
-                return mock.Object;
+                if (constructor == null || constructor.GetParameters().Length == 0)
+                {
+                    var mock = CreateOrResolveAMock(parameterType);
+
+                    return mock.Object; 
+                }
+                else
+                {
+                    return ResolveByGreediestConstructor(parameterType);
+                }
             }
         }
 
@@ -138,7 +157,7 @@ namespace MagicMoq
 
     public static class ISetupExtensions
     {
-        public static ISetup<T, TResult> AndMagicallyResolve<T, TResult>(this ISetup<T, TResult> setup, MagicMoq magic)
+        public static ISetup<T, TResult> AndResolveWith<T, TResult>(this ISetup<T, TResult> setup, Moqer magic)
             where T : class
         {
             setup.Returns(magic.Resolve<TResult>());
