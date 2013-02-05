@@ -3,7 +3,7 @@
 
 ##Mocking dependencies with style 8-)
 
-MagicMoq is a extension to the Moq mocking framework – It is like a IoC container that injects mocked dependencies when resolving a type, making the job of creating testing subjects much more easy (and fun).
+MagicMoq is an extension to the Moq mocking framework – It is like an IoC container that injects mocked dependencies when resolving a type, making the job of creating testing subjects much easier (and nicer).
 
 It is so easy to use as the Moq framework. Check it out:
 
@@ -63,7 +63,7 @@ public void NiceTest()
 }
 ```
 
-###And you can obviously create setups with the MagicMoq API:
+###And you can, obviously, create setups with the MagicMoq API:
 ```C#
 [Test]
 public void EvenMoreNiceTest()
@@ -79,7 +79,7 @@ public void EvenMoreNiceTest()
 }
 ```
 
-###Another cool feature is the ability to "redirect" calls to a dependency method to the MagicMoq itself, making it return another mocked dependency from the container:
+###Another cool feature is the ability to "redirect" calls to a method of a dependency to the MagicMoq itself, making the method return another mocked dependency from the container:
 ```C#
         [Test]
         public void MagicTest()
