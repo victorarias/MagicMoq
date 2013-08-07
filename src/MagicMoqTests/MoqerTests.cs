@@ -11,7 +11,7 @@ using MagicMoq;
 namespace MagicMoqTests
 {
     [TestFixture]
-    public class MagicMoqTests
+    public class MoqerTests
     {
         [Test]
         public void ShouldCreateClassWithDependenciesAndVerify()
