@@ -75,7 +75,7 @@ namespace MagicMoq
                 {
                     var mock = CreateOrResolveAMock(parameterType);
 
-                    return mock.Object; 
+                    return mock.Object;
                 }
                 else
                 {
