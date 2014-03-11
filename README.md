@@ -199,7 +199,7 @@ public class SampleController : Controller
 	}
 ```
 
-### Pretty ugly, right? a lot noise. Our tests should be clean. So, you can do better, you can use MagicMoqController
+### Pretty ugly, right? Our tests should be clean. So, you can do better.. use MagicMoqController 8-)
 
 ```C#
 [Test]
