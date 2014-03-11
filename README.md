@@ -1,5 +1,4 @@
 #MagicMoq
-========
 
 ##Mocking dependencies with style 8-)
 
