@@ -136,4 +136,81 @@ public void EvenMoreNiceTest()
         }
 ```
 
+##Mocking controllers with style 8-)
 
+MagicMoqController helps you test Mvc Controllers easier. It's a MagicMoq subclass which mocks session, form, cookie, authentications values :). 
+
+###Assuming that you have this simple controller:
+
+```C#
+public class SampleController : Controller
+{
+	private readonly ISomethingRepository _somethingRepository;
+	private readonly ISomethingService _somethingService;
+
+	public SampleController(ISomethingRepository somethingRepository, ISomethingService somethingService)
+	{
+		_somethingRepository = somethingRepository;
+		_somethingService = somethingService;
+	}
+
+	public ActionResult SomeActionWhichSetSessionValue()
+	{
+		Session["Something"] = "Value";
+		return View("SomeActionWhichSetSessionValue");
+	}
+
+	//more actions ..
+}
+```
+
+### And then you want to ensure that SomeActionWhichSetSessionValue in fact set the value "Value" to Session["Something"]
+
+```C#
+   [Test]
+	public void ShouldSetSomethingToSession()
+	{
+		//Arrange
+		var somethingRepositoryMock = new Mock<ISomethingRepository>();
+		var somethingServiceMock = new Mock<ISomethingService>();
+
+		var context = new Mock<HttpContextBase>();
+
+		var sessionSateBaseMock = new Mock<HttpSessionStateBase>();
+
+		sessionSateBaseMock.SetupSet(x => x["Something"] = It.IsAny<string>())
+		.Callback((string key, object value) =>
+		{
+			sessionSateBaseMock.SetupGet(x => x["Something"]).Returns(value);
+		});
+
+		context.Setup(ctx => ctx.Session).Returns(sessionSateBaseMock.Object);
+
+		var controller = new SampleController(somethingRepositoryMock.Object, somethingServiceMock.Object);
+
+		var controllerContext = new ControllerContext(context.Object, new RouteData(), controller);
+		controller.ControllerContext = controllerContext;
+
+		//Act
+		controller.SomeActionWhichSetSessionValue();
+
+		//Assert
+		controller.Session["Something"].Should().Be("Value");
+	}
+```
+
+### Pretty ugly, right? a lot noise / arrange, there are other ways to do it, but most of them with a lot of noise too. Our tests should be clean. So, you can do better, you can use MagicMoqController
+
+```C#
+[Test]
+public void ShouldSetSomethingToSession()
+{
+	var moqer = new MagicMoq.MoqerController();
+	var controller = moqer.Resolve<SampleController>();
+
+	controller.SomeActionWhichSetSessionValue();
+	controller.Session["Something"].Should().Be("Value");
+}
+```
+
+### TA-DA \o\
